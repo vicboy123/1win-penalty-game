@@ -132,7 +132,7 @@ class PenaltyGame {
         if (scored) {
             this.score++;
             cell.classList.add('scored');
-            const shotType = isSafeZone ? 'Safe shot! 🎯' : 'Risky shot! 🔥';
+            const shotType = isSafeZone ? 'Safe shot! 🏃' : 'Risky shot! 🔥';
             this.showResult(`⚽ GOAL! +1 ${shotType}`, 'success');
         } else {
             cell.classList.add('missed');
