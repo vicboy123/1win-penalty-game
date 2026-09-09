@@ -8,7 +8,8 @@ class PenaltyGame {
         this.gameOver = false;
         this.predictionVisible = false;
         this.predictedBlocks = [];
-        this.predictionAccuracy = 75; // 75% accuracy for predictions
+        this.predictionAccuracy = 78; // Dynamic accuracy
+        this.shotHistory = [];
         
         this.init();
     }
@@ -31,30 +32,32 @@ class PenaltyGame {
                 cell.dataset.row = i;
                 cell.dataset.col = j;
                 cell.dataset.index = i * this.gridCols + j;
+                
+                // Add hover prediction
+                cell.addEventListener('mouseenter', () => this.showCellPrediction(cell));
+                cell.addEventListener('mouseleave', () => this.hideCellPrediction(cell));
+                
                 goalGrid.appendChild(cell);
             }
         }
     }
 
     generatePrediction() {
-        // Calculate which cells the goalkeeper will block based on probability
+        // Generate new prediction for this round
         this.predictedBlocks = [];
         const totalCells = this.gridRows * this.gridCols;
-        const blockPercentage = 0.4; // Goalkeeper can block 40% of the goal
+        const blockPercentage = 0.4;
         const cellsToBlock = Math.ceil(totalCells * blockPercentage);
 
-        // Use probability distribution - corners are safer, center is more dangerous
         const blockedIndices = new Set();
         
-        // Add center and nearby cells with higher probability
-        const centerIndices = [5, 6, 7, 10, 11, 12]; // Center area of 3x5 grid
+        // Center area is higher risk
+        const centerIndices = [5, 6, 7, 10, 11, 12];
         for (let i = 0; i < cellsToBlock; i++) {
             let index;
             if (Math.random() < 0.7 && blockedIndices.size < cellsToBlock) {
-                // 70% chance to block center area
                 index = centerIndices[Math.floor(Math.random() * centerIndices.length)];
             } else {
-                // 30% chance to block any area
                 index = Math.floor(Math.random() * totalCells);
             }
             blockedIndices.add(index);
@@ -63,7 +66,23 @@ class PenaltyGame {
         this.predictedBlocks = Array.from(blockedIndices);
     }
 
-    displayPrediction() {
+    showCellPrediction(cell) {
+        const index = parseInt(cell.dataset.index);
+        const isDanger = this.predictedBlocks.includes(index);
+        const probability = isDanger ? '30%' : '85%';
+        const status = isDanger ? '⚠️ DANGER' : '✅ SAFE';
+        
+        // Show live prediction info
+        cell.classList.add(isDanger ? 'danger-preview' : 'safe-preview');
+        cell.setAttribute('data-tooltip', `${status} - ${probability} success`);
+    }
+
+    hideCellPrediction(cell) {
+        cell.classList.remove('danger-preview', 'safe-preview');
+        cell.removeAttribute('data-tooltip');
+    }
+
+    displayFullPrediction() {
         const cells = document.querySelectorAll('.goal-cell');
         cells.forEach((cell, index) => {
             cell.classList.remove('safe', 'danger', 'prediction-active');
@@ -78,7 +97,7 @@ class PenaltyGame {
         });
         
         this.predictionVisible = true;
-        document.getElementById('showPredictionBtn').textContent = 'Hide Prediction';
+        document.getElementById('showPredictionBtn').textContent = 'Hide Full Prediction';
     }
 
     hidePrediction() {
@@ -89,14 +108,14 @@ class PenaltyGame {
         });
         
         this.predictionVisible = false;
-        document.getElementById('showPredictionBtn').textContent = 'Show Prediction';
+        document.getElementById('showPredictionBtn').textContent = 'Show Full Prediction';
     }
 
     togglePrediction() {
         if (this.predictionVisible) {
             this.hidePrediction();
         } else {
-            this.displayPrediction();
+            this.displayFullPrediction();
         }
     }
 
@@ -119,10 +138,20 @@ class PenaltyGame {
         const cellIndex = parseInt(cell.dataset.index);
         const isSafeZone = !this.predictedBlocks.includes(cellIndex);
         
-        // If shooting in safe zone: 85% chance to score
-        // If shooting in danger zone: 30% chance to score
+        // Success rates based on zone
         const successRate = isSafeZone ? 0.85 : 0.30;
         const scored = Math.random() < successRate;
+
+        // Record shot for accuracy tracking
+        this.shotHistory.push({
+            cellIndex,
+            isSafeZone,
+            scored,
+            predictedCorrectly: (isSafeZone && scored) || (!isSafeZone && !scored)
+        });
+
+        // Update prediction accuracy
+        this.updatePredictionAccuracy();
 
         // Clear previous prediction visuals
         if (this.predictionVisible) {
@@ -132,11 +161,11 @@ class PenaltyGame {
         if (scored) {
             this.score++;
             cell.classList.add('scored');
-            const shotType = isSafeZone ? 'Safe shot! 🏃' : 'Risky shot! 🔥';
+            const shotType = isSafeZone ? 'Safe shot! 🎯' : 'Risky shot! 🔥';
             this.showResult(`⚽ GOAL! +1 ${shotType}`, 'success');
         } else {
             cell.classList.add('missed');
-            const blockType = isSafeZone ? 'Keeper was lucky!' : 'Keeper blocked it!';
+            const blockType = isSafeZone ? 'Keeper was lucky!' : 'Keeper blocked it! 🧤';
             this.showResult(`❌ MISS! ${blockType}`, 'failure');
         }
 
@@ -154,6 +183,13 @@ class PenaltyGame {
         setTimeout(() => {
             this.enableCells();
         }, 600);
+    }
+
+    updatePredictionAccuracy() {
+        if (this.shotHistory.length === 0) return;
+        
+        const correctPredictions = this.shotHistory.filter(shot => shot.predictedCorrectly).length;
+        this.predictionAccuracy = Math.round((correctPredictions / this.shotHistory.length) * 100);
     }
 
     updateDisplay() {
@@ -179,6 +215,7 @@ class PenaltyGame {
         
         let message = `🎮 Game Over!\n`;
         message += `Final Score: ${this.score}/${this.maxAttempts}\n`;
+        message += `Prediction Accuracy: ${this.predictionAccuracy}%\n`;
         
         if (this.score === this.maxAttempts) {
             message += '🏆 Perfect! All goals scored!';
@@ -219,10 +256,12 @@ class PenaltyGame {
         this.attempts = 0;
         this.gameOver = false;
         this.predictionVisible = false;
+        this.shotHistory = [];
+        this.predictionAccuracy = 78;
         
         document.getElementById('results').textContent = '';
         document.getElementById('results').className = 'results';
-        document.getElementById('showPredictionBtn').textContent = 'Show Prediction';
+        document.getElementById('showPredictionBtn').textContent = 'Show Full Prediction';
         
         this.generatePrediction();
         this.createGrid();
