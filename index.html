@@ -3,16 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1Win Penalty Game</title>
+    <title>1Win Penalty Game - With Predictor</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <h1>⚽ 1Win Penalty Kick Game</h1>
+        <p class="subtitle">With Goalkeeper Predictor</p>
         
         <div class="game-info">
             <div class="score">Score: <span id="score">0</span></div>
             <div class="attempts">Attempts: <span id="attempts">0</span>/5</div>
+        </div>
+
+        <div class="predictor-section">
+            <h3>🧠 Goalkeeper Prediction</h3>
+            <div class="prediction-info">
+                <p id="predictionText">The goalkeeper will block these areas...</p>
+                <p class="accuracy">Prediction Accuracy: <span id="accuracy">75</span>%</p>
+            </div>
         </div>
 
         <div class="game-board">
@@ -26,10 +35,30 @@
 
         <div class="controls">
             <h3>Click on a square to shoot the ball there!</h3>
-            <button id="resetBtn" class="btn">New Game</button>
+            <button id="showPredictionBtn" class="btn btn-secondary">Show Prediction</button>
+            <button id="resetBtn" class="btn btn-primary">New Game</button>
         </div>
 
         <div class="results" id="results"></div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box safe"></div>
+                <span>Safe Zone (Low block chance)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box danger"></div>
+                <span>Danger Zone (High block chance)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box scored"></div>
+                <span>Your Goal</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box missed"></div>
+                <span>Your Miss</span>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
